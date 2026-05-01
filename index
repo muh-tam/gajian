@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Gaji TOEFL - Master System v2</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; padding: 20px; line-height: 1.6; margin: 0; }
+        .app-wrapper { max-width: 1100px; margin: 0 auto; }
+        .tab-header { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: -1px; position: relative; z-index: 2; }
+        .tab-button { padding: 10px 15px; background-color: #e0e0e0; border: 1px solid #ccc; border-bottom: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; color: #555; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+        .tab-button.active { background-color: #fff; color: #27ae60; border-top: 3px solid #27ae60; border-left: 1px solid #ccc; border-right: 1px solid #ccc; padding-bottom: 11px; }
+        .btn-close-tab { background: #e74c3c; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; line-height: 16px; cursor: pointer; font-size: 12px; }
+        .btn-add-tab { background-color: #34495e; color: white; border: none; border-radius: 4px; padding: 5px 15px; cursor: pointer; margin-left: 10px; font-weight: bold; }
+        .tab-content { display: none; background: #fff; padding: 30px; border: 1px solid #ccc; border-radius: 0 8px 8px 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .tab-content.active { display: block; }
+        .app-title { font-size: 26px; font-weight: bold; border: none; border-bottom: 2px dashed #999; width: 100%; margin-bottom: 15px; padding-bottom: 5px; text-align: center; background: transparent; outline: none; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #27ae60; color: white; }
+        .currency { text-align: right; font-family: monospace; font-size: 15px; }
+        .total-row { background-color: #e8f5e9; font-weight: bold; }
+        .highlight { font-weight: bold; color: #d35400; }
+        .btn { background-color: #27ae60; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn:hover { opacity: 0.8; }
+        .btn-print { background-color: #3498db; display: inline-block; margin-bottom: 10px; }
+        .btn-print-all { background-color: #8e44ad; display: inline-block; margin-bottom: 10px; margin-left: 5px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        input[type="number"], input[type="date"], select { padding: 5px; width: 100%; box-sizing: border-box; }
+
+        /* --- LOGIKA PRINT SEMUA --- */
+        @media print {
+            .tab-header, .btn, .btn-add-tab, .btn-close-tab, .btn-hapus { display: none !important; }
+            
+            /* Jika sedang print semua, tampilkan semua tab content */
+            body.printing-all .tab-content { 
+                display: block !important; 
+                page-break-after: always; 
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin-bottom: 50px;
+            }
+            
+            /* Jika print biasa (hanya tab aktif) */
+            body:not(.printing-all) .tab-content:not(.active) { display: none !important; }
+            body:not(.printing-all) .tab-content.active { border: none; box-shadow: none; display: block !important; }
+            
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+    <div class="tab-header" id="tabList">
+        <button class="tab-button active" id="btn-rekap" onclick="bukaTab('tab-rekap')">📊 REKAP</button>
+        <button class="tab-button" id="btn-reguler" onclick="bukaTab('tab-reguler')">📝 REGULER</button>
+        <button class="tab-button" id="btn-lti" onclick="bukaTab('tab-lti')">📜 LTI</button>
+        <button class="btn-add-tab" onclick="tambahTab()">+ Program</button>
+    </div>
+
+    <div id="tabContentContainer">
+        <div class="tab-content active" id="tab-rekap">
+            <h1 class="app-title">DAFTAR GAJI KESELURUHAN</h1>
+            <div style="text-align: center;">
+                <button class="btn btn-print" onclick="window.print()">💾 Cetak Halaman Ini</button>
+                <button class="btn btn-print-all" onclick="cetakSemua()">📁 Cetak Semua ke Satu PDF</button>
+            </div>
+            <table>
+                <thead><tr><th>Nama / Posisi</th><th>Total Pendapatan</th></tr></thead>
+                <tbody>
+                    <tr><td>Dewi (CS)</td><td class="currency" id="rekap-dewi">Rp 0</td></tr>
+                    <tr><td>Eka (CS)</td><td class="currency" id="rekap-eka">Rp 0</td></tr>
+                    <tr><td>Priscil (CS)</td><td class="currency" id="rekap-priscil">Rp 0</td></tr>
+                    <tr><td>Widya (CS)</td><td class="currency" id="rekap-widya">Rp 0</td></tr>
+                    <tr><td>Web Developer (10%)</td><td class="currency" id="rekap-web">Rp 0</td></tr>
+                    <tr><td>Ilham</td><td class="currency" id="rekap-ilham">Rp 0</td></tr>
+                    <tr class="total-row"><td>Muhtam (+ Bensin)</td><td class="currency" id="rekap-muhtam">Rp 0</td></tr>
+                    <tr><td>LKPB</td><td class="currency" id="rekap-lkpb">Rp 0</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="tab-content" id="tab-reguler">
+            <h1 class="app-title">GAJI - TES TOEFL REGULER</h1>
+            <button class="btn btn-print" onclick="window.print()">💾 Cetak Halaman Ini</button>
+            <table>
+                <thead><tr><th>Harga Paket</th><th>Peserta</th><th>Total</th></tr></thead>
+                <tbody>
+                    <tr><td>Rp 90.000</td><td><input type="number" class="reg-qty" data-harga="90000" value="0" oninput="updateSemua()"></td><td class="currency reg-sub">Rp 0</td></tr>
+                    <tr><td>Rp 100.000</td><td><input type="number" class="reg-qty-plus" data-harga="100000" value="0" oninput="updateSemua()"></td><td class="currency reg-sub">Rp 0</td></tr>
+                    <tr><td>Rp 110.000</td><td><input type="number" class="reg-qty-plus" data-harga="110000" value="0" oninput="updateSemua()"></td><td class="currency reg-sub">Rp 0</td></tr>
+                    <tr><td>Rp 115.000</td><td><input type="number" class="reg-qty-plus" data-harga="115000" value="0" oninput="updateSemua()"></td><td class="currency reg-sub">Rp 0</td></tr>
+                </tbody>
+                <tfoot><tr class="total-row"><td colspan="2" align="right">Total Masuk:</td><td class="currency" id="reg-t-masuk">Rp 0</td></tr></tfoot>
+            </table>
+            <div class="grid-2">
+                <div><h2>Fisik</h2><table><tr><td>Jumlah Cetak</td><td><input type="number" id="reg-fisik" value="0" oninput="updateSemua()"></td></tr></table></div>
+                <div><h2>Uang Sisa</h2><table><tr class="total-row"><td>SISA</td><td class="currency highlight" id="reg-sisa">Rp 0</td></tr></table></div>
+            </div>
+            <h2>Pembagian Gaji Reguler</h2>
+            <table>
+                <tr><td>Dewi (CS) - Gratis (20rb)</td><td class="currency" id="reg-out-cs-g">Rp 0</td></tr>
+                <tr><td>Dewi (CS) - Berbayar (25rb)</td><td class="currency" id="reg-out-cs-b">Rp 0</td></tr>
+                <tr><td>Web Developer</td><td class="currency" id="reg-out-web">Rp 0</td></tr>
+                <tr><td>Ilham</td><td class="currency" id="reg-out-ilham">Rp 0</td></tr>
+                <tr><td>Muhtam (+ Bensin)</td><td class="currency" id="reg-out-muhtam">Rp 0</td></tr>
+                <tr><td>LKPB</td><td class="currency" id="reg-out-lkpb">Rp 0</td></tr>
+            </table>
+        </div>
+
+        <div class="tab-content" id="tab-lti">
+            <h1 class="app-title">LTI x LKPB (KHUSUS SERTIFIKAT)</h1>
+            <button class="btn btn-print" onclick="window.print()">💾 Cetak Halaman Ini</button>
+            <table>
+                <thead><tr><th>Keterangan</th><th>Harga</th><th>Jumlah</th><th>Total</th></tr></thead>
+                <tbody>
+                    <tr><td>Sertifikat LTI</td><td class="currency">Rp 20.000</td><td><input type="number" id="lti-qty" value="0" oninput="updateSemua()"></td><td class="currency" id="lti-t-masuk">Rp 0</td></tr>
+                </tbody>
+            </table>
+            <div class="grid-2">
+                <div><h2>Potongan Web (10%)</h2><table><tr class="total-row"><td>Web</td><td class="currency" id="lti-out-web">Rp 0</td></tr></table></div>
+                <div><h2>Sisa Bersih</h2><table><tr class="total-row"><td>SISA</td><td class="currency highlight" id="lti-sisa">Rp 0</td></tr></table></div>
+            </div>
+            <h2>Pembagian (Bagi 3)</h2>
+            <table>
+                <tr><td>Ilham</td><td class="currency" id="lti-out-ilham">Rp 0</td></tr>
+                <tr><td>Muhtam</td><td class="currency" id="lti-out-muhtam">Rp 0</td></tr>
+                <tr><td>LKPB</td><td class="currency" id="lti-out-lkpb">Rp 0</td></tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const formatRp = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
+    let tabCounter = 0;
+
+    // Fungsi Cetak Semua
+    function cetakSemua() {
+        document.body.classList.add('printing-all');
+        window.print();
+        // Hapus class setelah dialog cetak ditutup (user klik cancel/save)
+        setTimeout(() => {
+            document.body.classList.remove('printing-all');
+        }, 500);
+    }
+
+    function getCalculatorHTML(id) {
+        return `<input type="text" class="app-title" value="TOEFL AKBAR - PROGRAM ${id}"><button class="btn btn-print" onclick="window.print()">💾 Cetak Halaman Ini</button>
+            <h2>Uang Masuk</h2>
+            <table><thead><tr><th>Tanggal</th><th>Jumlah</th><th>Total</th><th>Aksi</th></tr></thead>
+            <tbody class="body-masuk"><tr><td><input type="date"></td><td><input type="number" class="input-qty" value="0" oninput="updateSemua()"></td><td class="currency row-total">Rp 0</td><td></td></tr></tbody>
+            <tfoot><tr class="total-row"><td colspan="2" align="right">Total:</td><td class="currency grand-total-masuk">Rp 0</td><td></td></tr></tfoot>
+            </table><button class="btn" onclick="tambahBaris(this)">+ Baris</button>
+            <div class="grid-2">
+                <div><h2>Fisik</h2><table><tr><td>Cetak</td><td><input type="number" class="input-fisik" value="0" oninput="updateSemua()"></td></tr></table></div>
+                <div><h2>Sisa</h2><table><tr class="total-row"><td>SISA</td><td class="currency highlight calc-uang-sisa">Rp 0</td></tr></table></div>
+            </div>
+            <h2>Pembagian</h2>
+            <table>
+                <tr><td>CS: <select class="pilih-cs" onchange="updateSemua()"><option value="dewi">Dewi</option><option value="eka">Eka</option><option value="priscil">Priscil</option><option value="widya">Widya</option></select></td><td class="currency val-cs">Rp 0</td></tr>
+                <tr><td>Web</td><td class="currency val-web">Rp 0</td></tr>
+                <tr><td>Ilham</td><td class="currency val-ilham">Rp 0</td></tr>
+                <tr><td>Muhtam</td><td class="currency val-muhtam">Rp 0</td></tr>
+                <tr><td>LKPB</td><td class="currency val-lkpb">Rp 0</td></tr>
+            </table>`;
+    }
+
+    function tambahTab() {
+        tabCounter++; const id = 'tab-' + tabCounter;
+        const btn = document.createElement('button'); btn.className = 'tab-button'; btn.id = 'btn-' + id;
+        btn.innerHTML = `Prog ${tabCounter} <button class="btn-close-tab" onclick="hapusTab(event, '${id}')">×</button>`;
+        btn.onclick = () => bukaTab(id);
+        document.getElementById('tabList').insertBefore(btn, document.querySelector('.btn-add-tab'));
+        const content = document.createElement('div'); content.className = 'tab-content'; content.id = id;
+        content.innerHTML = getCalculatorHTML(tabCounter);
+        document.getElementById('tabContentContainer').appendChild(content);
+        bukaTab(id);
+    }
+
+    function bukaTab(id) {
+        document.querySelectorAll('.tab-content, .tab-button').forEach(el => el.classList.remove('active'));
+        document.getElementById(id).classList.add('active'); document.getElementById('btn-' + id).classList.add('active');
+    }
+
+    function hapusTab(e, id) { e.stopPropagation(); document.getElementById(id).remove(); document.getElementById('btn-' + id).remove(); updateSemua(); }
+
+    function tambahBaris(btn) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><input type="date"></td><td><input type="number" class="input-qty" value="0" oninput="updateSemua()"></td><td class="currency row-total">Rp 0</td><td><button onclick="this.closest('tr').remove(); updateSemua();">❌</button></td>`;
+        btn.closest('.tab-content').querySelector('.body-masuk').appendChild(tr);
+    }
+
+    function updateSemua() {
+        let r = { dewi: 0, eka: 0, priscil: 0, widya: 0, web: 0, ilham: 0, muhtam: 0, lkpb: 0, bensin: 0 };
+
+        // 1. Tab Reguler
+        const regTab = document.getElementById('tab-reguler');
+        let regT = 0, q90 = parseInt(regTab.querySelector('.reg-qty').value) || 0, qPlus = 0;
+        regTab.querySelectorAll('input[class^="reg-qty"]').forEach(i => {
+            let s = (parseInt(i.dataset.harga) * (parseInt(i.value) || 0)); regT += s;
+            i.closest('tr').querySelector('.reg-sub').innerText = formatRp(s);
+            if (parseInt(i.dataset.harga) > 90000) qPlus += (parseInt(i.value) || 0);
+        });
+        let gG = q90 * 20000, gB = qPlus * 25000, gW = regT * 0.1, gBenReg = (parseInt(document.getElementById('reg-fisik').value) || 0) * 7000;
+        let gSisa = regT - gG - gB - gW, g3 = gSisa / 3;
+        document.getElementById('reg-t-masuk').innerText = formatRp(regT);
+        document.getElementById('reg-sisa').innerText = formatRp(gSisa);
+        document.getElementById('reg-out-cs-g').innerText = formatRp(gG); document.getElementById('reg-out-cs-b').innerText = formatRp(gB);
+        document.getElementById('reg-out-web').innerText = formatRp(gW); document.getElementById('reg-out-ilham').innerText = formatRp(g3);
+        document.getElementById('reg-out-muhtam').innerText = formatRp(g3 + gBenReg); document.getElementById('reg-out-lkpb').innerText = formatRp(g3);
+        r.dewi += (gG+gB); r.web += gW; r.ilham += g3; r.muhtam += g3; r.lkpb += g3; r.bensin += gBenReg;
+
+        // 2. Tab LTI
+        let lQty = parseInt(document.getElementById('lti-qty').value) || 0, lMasuk = lQty * 20000, lWeb = lMasuk * 0.1, lSisa = lMasuk - lWeb, l3 = lSisa / 3;
+        document.getElementById('lti-t-masuk').innerText = formatRp(lMasuk); document.getElementById('lti-out-web').innerText = formatRp(lWeb);
+        document.getElementById('lti-sisa').innerText = formatRp(lSisa); document.getElementById('lti-out-ilham').innerText = formatRp(l3);
+        document.getElementById('lti-out-muhtam').innerText = formatRp(l3); document.getElementById('lti-out-lkpb').innerText = formatRp(l3);
+        r.web += lWeb; r.ilham += l3; r.muhtam += l3; r.lkpb += l3;
+
+        // 3. Tab Program Dinamis
+        document.querySelectorAll('.tab-content:not(#tab-rekap):not(#tab-reguler):not(#tab-lti)').forEach(t => {
+            let tM = 0; t.querySelectorAll('.input-qty').forEach(i => { let s = (parseInt(i.value) || 0) * 90000; tM += s; i.closest('tr').querySelector('.row-total').innerText = formatRp(s); });
+            t.querySelector('.grand-total-masuk').innerText = formatRp(tM);
+            let tW = tM * 0.1, tS = tM - tW, t4 = tS / 4, tBen = (parseInt(t.querySelector('.input-fisik').value) || 0) * 7000;
+            t.querySelector('.calc-uang-sisa').innerText = formatRp(tS); t.querySelector('.val-cs').innerText = formatRp(t4);
+            t.querySelector('.val-web').innerText = formatRp(tW); t.querySelector('.val-ilham').innerText = formatRp(t4);
+            t.querySelector('.val-muhtam').innerText = formatRp(t4); t.querySelector('.val-lkpb').innerText = formatRp(t4);
+            r[t.querySelector('.pilih-cs').value] += t4; r.web += tW; r.ilham += t4; r.muhtam += t4; r.lkpb += t4; r.bensin += tBen;
+        });
+
+        // 4. Update Rekap
+        document.getElementById('rekap-dewi').innerText = formatRp(r.dewi); document.getElementById('rekap-eka').innerText = formatRp(r.eka);
+        document.getElementById('rekap-priscil').innerText = formatRp(r.priscil); document.getElementById('rekap-widya').innerText = formatRp(r.widya);
+        document.getElementById('rekap-web').innerText = formatRp(r.web); document.getElementById('rekap-ilham').innerText = formatRp(r.ilham);
+        document.getElementById('rekap-muhtam').innerText = formatRp(r.muhtam + r.bensin); document.getElementById('rekap-lkpb').innerText = formatRp(r.lkpb);
+    }
+    window.onload = () => { updateSemua(); };
+</script>
+</body>
+</html>
