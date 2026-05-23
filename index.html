@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulator Gaji TOEFL - Master System v2</title>
+    <title>Kalkulator Gaji TOEFL LKPB Indonesia ver 1.5.5</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; padding: 20px; line-height: 1.6; margin: 0; }
         .app-wrapper { max-width: 1100px; margin: 0 auto; }
@@ -87,12 +87,33 @@
             <button class="btn btn-print" onclick="window.print()">💾 Cetak Halaman Ini</button>
             <table>
                 <thead><tr><th>Harga Paket</th><th>Peserta</th><th>Total</th></tr></thead>
-                <tbody>
-                    <tr><td>Rp 90.000</td><td><input type="number" class="reg-qty" data-harga="90000" value="0" oninput="updateSemua()"></td><td class="currency reg-sub">Rp 0</td></tr>
-                    <tr><td>Rp 100.000</td><td><input type="number" class="reg-qty-plus" data-harga="100000" value="0" oninput="updateSemua()"></td><td class="currency reg-sub">Rp 0</td></tr>
-                    <tr><td>Rp 110.000</td><td><input type="number" class="reg-qty-plus" data-harga="110000" value="0" oninput="updateSemua()"></td><td class="currency reg-sub">Rp 0</td></tr>
-                    <tr><td>Rp 115.000</td><td><input type="number" class="reg-qty-plus" data-harga="115000" value="0" oninput="updateSemua()"></td><td class="currency reg-sub">Rp 0</td></tr>
-                </tbody>
+               <tbody>
+    <tr>
+        <td>Rp 90.000 (Reguler)</td>
+        <td><input type="number" class="reg-qty" data-harga="90000" value="0" oninput="updateSemua()"></td>
+        <td class="currency reg-sub">Rp 0</td>
+    </tr>
+    <tr>
+        <td>Rp 90.000 (Khusus/Berbayar)</td>
+        <td><input type="number" class="reg-qty-khusus" data-harga="90000" value="0" oninput="updateSemua()"></td>
+        <td class="currency reg-sub">Rp 0</td>
+    </tr>
+    <tr>
+        <td>Rp 100.000</td>
+        <td><input type="number" class="reg-qty-plus" data-harga="100000" value="0" oninput="updateSemua()"></td>
+        <td class="currency reg-sub">Rp 0</td>
+    </tr>
+    <tr>
+        <td>Rp 110.000</td>
+        <td><input type="number" class="reg-qty-plus" data-harga="110000" value="0" oninput="updateSemua()"></td>
+        <td class="currency reg-sub">Rp 0</td>
+    </tr>
+    <tr>
+        <td>Rp 115.000</td>
+        <td><input type="number" class="reg-qty-plus" data-harga="115000" value="0" oninput="updateSemua()"></td>
+        <td class="currency reg-sub">Rp 0</td>
+    </tr>
+</tbody>
                 <tfoot><tr class="total-row"><td colspan="2" align="right">Total Masuk:</td><td class="currency" id="reg-t-masuk">Rp 0</td></tr></tfoot>
             </table>
             <div class="grid-2">
@@ -196,22 +217,54 @@
     function updateSemua() {
         let r = { dewi: 0, eka: 0, priscil: 0, widya: 0, web: 0, ilham: 0, muhtam: 0, lkpb: 0, bensin: 0 };
 
-        // 1. Tab Reguler
-        const regTab = document.getElementById('tab-reguler');
-        let regT = 0, q90 = parseInt(regTab.querySelector('.reg-qty').value) || 0, qPlus = 0;
-        regTab.querySelectorAll('input[class^="reg-qty"]').forEach(i => {
-            let s = (parseInt(i.dataset.harga) * (parseInt(i.value) || 0)); regT += s;
-            i.closest('tr').querySelector('.reg-sub').innerText = formatRp(s);
-            if (parseInt(i.dataset.harga) > 90000) qPlus += (parseInt(i.value) || 0);
-        });
-        let gG = q90 * 20000, gB = qPlus * 25000, gW = regT * 0.1, gBenReg = (parseInt(document.getElementById('reg-fisik').value) || 0) * 7000;
-        let gSisa = regT - gG - gB - gW, g3 = gSisa / 3;
-        document.getElementById('reg-t-masuk').innerText = formatRp(regT);
-        document.getElementById('reg-sisa').innerText = formatRp(gSisa);
-        document.getElementById('reg-out-cs-g').innerText = formatRp(gG); document.getElementById('reg-out-cs-b').innerText = formatRp(gB);
-        document.getElementById('reg-out-web').innerText = formatRp(gW); document.getElementById('reg-out-ilham').innerText = formatRp(g3);
-        document.getElementById('reg-out-muhtam').innerText = formatRp(g3 + gBenReg); document.getElementById('reg-out-lkpb').innerText = formatRp(g3);
-        r.dewi += (gG+gB); r.web += gW; r.ilham += g3; r.muhtam += g3; r.lkpb += g3; r.bensin += gBenReg;
+       // 1. Tab Reguler
+const regTab = document.getElementById('tab-reguler');
+let regT = 0;
+let q90 = parseInt(regTab.querySelector('.reg-qty').value) || 0; // Reguler Biasa
+let qKhusus = parseInt(regTab.querySelector('.reg-qty-khusus').value) || 0; // 90rb Berbayar
+let qPlus = 0; // Berbayar > 90rb
+
+// Hitung Total Uang Masuk dari semua input
+regTab.querySelectorAll('input[class^="reg-qty"]').forEach(i => {
+    let subtotal = (parseInt(i.dataset.harga) * (parseInt(i.value) || 0));
+    regT += subtotal;
+    i.closest('tr').querySelector('.reg-sub').innerText = formatRp(subtotal);
+    
+    // Kelompokkan jumlah peserta untuk komisi Berbayar (>90rb)
+    if (i.classList.contains('reg-qty-plus')) {
+        qPlus += (parseInt(i.value) || 0);
+    }
+});
+
+// LOGIKA BARU:
+// Peserta Berbayar adalah total dari qPlus DAN qKhusus (90rb yang baru ditambahkan)
+let totalBerbayar = qPlus + qKhusus;
+
+let gG = q90 * 20000;                // Gaji Gratis/Biasa (hanya dari 90rb reguler)
+let gB = totalBerbayar * 25000;      // Gaji Berbayar (dari 90rb khusus + harga lainnya)
+let gW = regT * 0.1;                 // Web Dev 10%
+let gBenReg = (parseInt(document.getElementById('reg-fisik').value) || 0) * 7000;
+
+let gSisa = regT - gG - gB - gW;
+let g3 = gSisa / 3;
+
+// Update Tampilan UI
+document.getElementById('reg-t-masuk').innerText = formatRp(regT);
+document.getElementById('reg-sisa').innerText = formatRp(gSisa);
+document.getElementById('reg-out-cs-g').innerText = formatRp(gG); 
+document.getElementById('reg-out-cs-b').innerText = formatRp(gB);
+document.getElementById('reg-out-web').innerText = formatRp(gW); 
+document.getElementById('reg-out-ilham').innerText = formatRp(g3);
+document.getElementById('reg-out-muhtam').innerText = formatRp(g3 + gBenReg); 
+document.getElementById('reg-out-lkpb').innerText = formatRp(g3);
+
+// Update Rekap Akumulasi
+r.dewi += (gG + gB); 
+r.web += gW; 
+r.ilham += g3; 
+r.muhtam += g3; 
+r.lkpb += g3; 
+r.bensin += gBenReg;
 
         // 2. Tab LTI
         let lQty = parseInt(document.getElementById('lti-qty').value) || 0, lMasuk = lQty * 20000, lWeb = lMasuk * 0.1, lSisa = lMasuk - lWeb, l3 = lSisa / 3;
