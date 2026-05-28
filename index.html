@@ -161,7 +161,7 @@
     // ==========================================
     // PENGATURAN BIAYA CETAK FISIK (Silakan sesuaikan di sini)
     // ==========================================
-    const BIAYA_CETAK_TOTAL = 25000; // Contoh: Total biaya cetak per lembar Rp 25.000
+    const BIAYA_CETAK_TOTAL = 15000; // Contoh: Total biaya cetak per lembar Rp 15.000
     const BENSIN_MUHTAM     = 7000;  // Uang bensin untuk Muhtam tetap Rp 7.000
     const SISA_CETAK_LKPB   = BIAYA_CETAK_TOTAL - BENSIN_MUHTAM; // Sisanya (Rp 8.000) masuk ke LKPB
 
@@ -246,8 +246,8 @@
         
         // --- LOGIKA CETAK FISIK REGULER ---
         let jmlFisikReg = parseInt(document.getElementById('reg-fisik').value) || 0;
-        let gBenReg = jmlFisikReg * BENSIN_MUHTAM;            // Masuk ke bensin Muhtam
-        let gLkpbRegCetak = jmlFisikReg * SISA_CETAK_LKPB;    // Sisa masuk ke LKPB
+        let gBenReg = jmlFisikReg * BENSIN_MUHTAM;            
+        let gLkpbRegCetak = jmlFisikReg * SISA_CETAK_LKPB;    
 
         let gSisa = regT - gG - gB - gW;
         let g3 = gSisa / 3;
@@ -260,14 +260,14 @@
         document.getElementById('reg-out-web').innerText = formatRp(gW); 
         document.getElementById('reg-out-ilham').innerText = formatRp(g3);
         document.getElementById('reg-out-muhtam').innerText = formatRp(g3 + gBenReg); 
-        document.getElementById('reg-out-lkpb').innerText = formatRp(g3 + gLkpbRegCetak); // Bagian LKPB + Sisa Cetak
+        document.getElementById('reg-out-lkpb').innerText = formatRp(g3 + gLkpbRegCetak); 
 
         // Update Rekap Akumulasi
         r.dewi += (gG + gB); 
         r.web += gW; 
         r.ilham += g3; 
         r.muhtam += g3; 
-        r.lkpb += (g3 + gLkpbRegCetak); // Akumulasi LKPB + Sisa Cetak
+        r.lkpb += (g3 + gLkpbRegCetak); 
         r.bensin += gBenReg;
 
         // 2. Tab LTI
@@ -285,21 +285,21 @@
             
             // --- LOGIKA CETAK FISIK PROGRAM DINAMIS ---
             let jmlFisikProg = parseInt(t.querySelector('.input-fisik').value) || 0;
-            let tBen = jmlFisikProg * BENSIN_MUHTAM;            // Masuk ke bensin Muhtam
-            let tLkpbProgCetak = jmlFisikProg * SISA_CETAK_LKPB; // Sisa masuk ke LKPB
+            let tBen = jmlFisikProg * BENSIN_MUHTAM;            
+            let tLkpbProgCetak = jmlFisikProg * SISA_CETAK_LKPB; 
             
             t.querySelector('.calc-uang-sisa').innerText = formatRp(tS); 
             t.querySelector('.val-cs').innerText = formatRp(t4);
             t.querySelector('.val-web').innerText = formatRp(tW); 
             t.querySelector('.val-ilham').innerText = formatRp(t4);
-            t.querySelector('.val-muhtam').innerText = formatRp(t4); 
-            t.querySelector('.val-lkpb').innerText = formatRp(t4 + tLkpbProgCetak); // Bagian LKPB + Sisa Cetak
+            t.querySelector('.val-muhtam').innerText = formatRp(t4 + tBen); // <--- SEKARANG SUDAH DITAMBAH UANG BENSIN
+            t.querySelector('.val-lkpb').innerText = formatRp(t4 + tLkpbProgCetak); 
             
             r[t.querySelector('.pilih-cs').value] += t4; 
             r.web += tW; 
             r.ilham += t4; 
             r.muhtam += t4; 
-            r.lkpb += (t4 + tLkpbProgCetak); // Akumulasi LKPB + Sisa Cetak
+            r.lkpb += (t4 + tLkpbProgCetak); 
             r.bensin += tBen;
         });
 
