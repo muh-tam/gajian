@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulator Gaji TOEFL LKPB Indonesia ver 1.5.5</title>
+    <title>Kalkulator Gaji TOEFL LKPB Indonesia ver 1.5.6</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; padding: 20px; line-height: 1.6; margin: 0; }
         .app-wrapper { max-width: 1100px; margin: 0 auto; }
@@ -158,11 +158,17 @@
     const formatRp = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
     let tabCounter = 0;
 
+    // ==========================================
+    // PENGATURAN BIAYA CETAK FISIK (Silakan sesuaikan di sini)
+    // ==========================================
+    const BIAYA_CETAK_TOTAL = 25000; // Contoh: Total biaya cetak per lembar Rp 25.000
+    const BENSIN_MUHTAM     = 7000;  // Uang bensin untuk Muhtam tetap Rp 7.000
+    const SISA_CETAK_LKPB   = BIAYA_CETAK_TOTAL - BENSIN_MUHTAM; // Sisanya (Rp 8.000) masuk ke LKPB
+
     // Fungsi Cetak Semua
     function cetakSemua() {
         document.body.classList.add('printing-all');
         window.print();
-        // Hapus class setelah dialog cetak ditutup (user klik cancel/save)
         setTimeout(() => {
             document.body.classList.remove('printing-all');
         }, 500);
@@ -217,54 +223,52 @@
     function updateSemua() {
         let r = { dewi: 0, eka: 0, priscil: 0, widya: 0, web: 0, ilham: 0, muhtam: 0, lkpb: 0, bensin: 0 };
 
-       // 1. Tab Reguler
-const regTab = document.getElementById('tab-reguler');
-let regT = 0;
-let q90 = parseInt(regTab.querySelector('.reg-qty').value) || 0; // Reguler Biasa
-let qKhusus = parseInt(regTab.querySelector('.reg-qty-khusus').value) || 0; // 90rb Berbayar
-let qPlus = 0; // Berbayar > 90rb
+        // 1. Tab Reguler
+        const regTab = document.getElementById('tab-reguler');
+        let regT = 0;
+        let q90 = parseInt(regTab.querySelector('.reg-qty').value) || 0; 
+        let qKhusus = parseInt(regTab.querySelector('.reg-qty-khusus').value) || 0; 
+        let qPlus = 0; 
 
-// Hitung Total Uang Masuk dari semua input
-regTab.querySelectorAll('input[class^="reg-qty"]').forEach(i => {
-    let subtotal = (parseInt(i.dataset.harga) * (parseInt(i.value) || 0));
-    regT += subtotal;
-    i.closest('tr').querySelector('.reg-sub').innerText = formatRp(subtotal);
-    
-    // Kelompokkan jumlah peserta untuk komisi Berbayar (>90rb)
-    if (i.classList.contains('reg-qty-plus')) {
-        qPlus += (parseInt(i.value) || 0);
-    }
-});
+        regTab.querySelectorAll('input[class^="reg-qty"]').forEach(i => {
+            let subtotal = (parseInt(i.dataset.harga) * (parseInt(i.value) || 0));
+            regT += subtotal;
+            i.closest('tr').querySelector('.reg-sub').innerText = formatRp(subtotal);
+            if (i.classList.contains('reg-qty-plus')) {
+                qPlus += (parseInt(i.value) || 0);
+            }
+        });
 
-// LOGIKA BARU:
-// Peserta Berbayar adalah total dari qPlus DAN qKhusus (90rb yang baru ditambahkan)
-let totalBerbayar = qPlus + qKhusus;
+        let totalBerbayar = qPlus + qKhusus;
+        let gG = q90 * 20000;                
+        let gB = totalBerbayar * 25000;      
+        let gW = regT * 0.1;                 
+        
+        // --- LOGIKA CETAK FISIK REGULER ---
+        let jmlFisikReg = parseInt(document.getElementById('reg-fisik').value) || 0;
+        let gBenReg = jmlFisikReg * BENSIN_MUHTAM;            // Masuk ke bensin Muhtam
+        let gLkpbRegCetak = jmlFisikReg * SISA_CETAK_LKPB;    // Sisa masuk ke LKPB
 
-let gG = q90 * 20000;                // Gaji Gratis/Biasa (hanya dari 90rb reguler)
-let gB = totalBerbayar * 25000;      // Gaji Berbayar (dari 90rb khusus + harga lainnya)
-let gW = regT * 0.1;                 // Web Dev 10%
-let gBenReg = (parseInt(document.getElementById('reg-fisik').value) || 0) * 7000;
+        let gSisa = regT - gG - gB - gW;
+        let g3 = gSisa / 3;
 
-let gSisa = regT - gG - gB - gW;
-let g3 = gSisa / 3;
+        // Update Tampilan UI Tab Reguler
+        document.getElementById('reg-t-masuk').innerText = formatRp(regT);
+        document.getElementById('reg-sisa').innerText = formatRp(gSisa);
+        document.getElementById('reg-out-cs-g').innerText = formatRp(gG); 
+        document.getElementById('reg-out-cs-b').innerText = formatRp(gB);
+        document.getElementById('reg-out-web').innerText = formatRp(gW); 
+        document.getElementById('reg-out-ilham').innerText = formatRp(g3);
+        document.getElementById('reg-out-muhtam').innerText = formatRp(g3 + gBenReg); 
+        document.getElementById('reg-out-lkpb').innerText = formatRp(g3 + gLkpbRegCetak); // Bagian LKPB + Sisa Cetak
 
-// Update Tampilan UI
-document.getElementById('reg-t-masuk').innerText = formatRp(regT);
-document.getElementById('reg-sisa').innerText = formatRp(gSisa);
-document.getElementById('reg-out-cs-g').innerText = formatRp(gG); 
-document.getElementById('reg-out-cs-b').innerText = formatRp(gB);
-document.getElementById('reg-out-web').innerText = formatRp(gW); 
-document.getElementById('reg-out-ilham').innerText = formatRp(g3);
-document.getElementById('reg-out-muhtam').innerText = formatRp(g3 + gBenReg); 
-document.getElementById('reg-out-lkpb').innerText = formatRp(g3);
-
-// Update Rekap Akumulasi
-r.dewi += (gG + gB); 
-r.web += gW; 
-r.ilham += g3; 
-r.muhtam += g3; 
-r.lkpb += g3; 
-r.bensin += gBenReg;
+        // Update Rekap Akumulasi
+        r.dewi += (gG + gB); 
+        r.web += gW; 
+        r.ilham += g3; 
+        r.muhtam += g3; 
+        r.lkpb += (g3 + gLkpbRegCetak); // Akumulasi LKPB + Sisa Cetak
+        r.bensin += gBenReg;
 
         // 2. Tab LTI
         let lQty = parseInt(document.getElementById('lti-qty').value) || 0, lMasuk = lQty * 20000, lWeb = lMasuk * 0.1, lSisa = lMasuk - lWeb, l3 = lSisa / 3;
@@ -273,18 +277,33 @@ r.bensin += gBenReg;
         document.getElementById('lti-out-muhtam').innerText = formatRp(l3); document.getElementById('lti-out-lkpb').innerText = formatRp(l3);
         r.web += lWeb; r.ilham += l3; r.muhtam += l3; r.lkpb += l3;
 
-        // 3. Tab Program Dinamis
+        // 3. Tab Program Dinamis (+ Program)
         document.querySelectorAll('.tab-content:not(#tab-rekap):not(#tab-reguler):not(#tab-lti)').forEach(t => {
             let tM = 0; t.querySelectorAll('.input-qty').forEach(i => { let s = (parseInt(i.value) || 0) * 90000; tM += s; i.closest('tr').querySelector('.row-total').innerText = formatRp(s); });
             t.querySelector('.grand-total-masuk').innerText = formatRp(tM);
-            let tW = tM * 0.1, tS = tM - tW, t4 = tS / 4, tBen = (parseInt(t.querySelector('.input-fisik').value) || 0) * 7000;
-            t.querySelector('.calc-uang-sisa').innerText = formatRp(tS); t.querySelector('.val-cs').innerText = formatRp(t4);
-            t.querySelector('.val-web').innerText = formatRp(tW); t.querySelector('.val-ilham').innerText = formatRp(t4);
-            t.querySelector('.val-muhtam').innerText = formatRp(t4); t.querySelector('.val-lkpb').innerText = formatRp(t4);
-            r[t.querySelector('.pilih-cs').value] += t4; r.web += tW; r.ilham += t4; r.muhtam += t4; r.lkpb += t4; r.bensin += tBen;
+            let tW = tM * 0.1, tS = tM - tW, t4 = tS / 4;
+            
+            // --- LOGIKA CETAK FISIK PROGRAM DINAMIS ---
+            let jmlFisikProg = parseInt(t.querySelector('.input-fisik').value) || 0;
+            let tBen = jmlFisikProg * BENSIN_MUHTAM;            // Masuk ke bensin Muhtam
+            let tLkpbProgCetak = jmlFisikProg * SISA_CETAK_LKPB; // Sisa masuk ke LKPB
+            
+            t.querySelector('.calc-uang-sisa').innerText = formatRp(tS); 
+            t.querySelector('.val-cs').innerText = formatRp(t4);
+            t.querySelector('.val-web').innerText = formatRp(tW); 
+            t.querySelector('.val-ilham').innerText = formatRp(t4);
+            t.querySelector('.val-muhtam').innerText = formatRp(t4); 
+            t.querySelector('.val-lkpb').innerText = formatRp(t4 + tLkpbProgCetak); // Bagian LKPB + Sisa Cetak
+            
+            r[t.querySelector('.pilih-cs').value] += t4; 
+            r.web += tW; 
+            r.ilham += t4; 
+            r.muhtam += t4; 
+            r.lkpb += (t4 + tLkpbProgCetak); // Akumulasi LKPB + Sisa Cetak
+            r.bensin += tBen;
         });
 
-        // 4. Update Rekap
+        // 4. Update Tampilan Halaman REKAP Utama
         document.getElementById('rekap-dewi').innerText = formatRp(r.dewi); document.getElementById('rekap-eka').innerText = formatRp(r.eka);
         document.getElementById('rekap-priscil').innerText = formatRp(r.priscil); document.getElementById('rekap-widya').innerText = formatRp(r.widya);
         document.getElementById('rekap-web').innerText = formatRp(r.web); document.getElementById('rekap-ilham').innerText = formatRp(r.ilham);
