@@ -159,7 +159,7 @@
     let tabCounter = 0;
 
     // ==========================================
-    // PENGATURAN BIAYA CETAK FISIK (Silakan sesuaikan di sini)
+    // PENGATURAN BIAYA CETAK FISIK
     // ==========================================
     const BIAYA_CETAK_TOTAL = 25000; // Contoh: Total biaya cetak per lembar Rp 25.000
     const BENSIN_MUHTAM     = 7000;  // Uang bensin untuk Muhtam tetap Rp 7.000
@@ -223,7 +223,7 @@
     function updateSemua() {
         let r = { dewi: 0, eka: 0, priscil: 0, widya: 0, web: 0, ilham: 0, muhtam: 0, lkpb: 0, bensin: 0 };
 
-        // 1. Tab Reguler
+        // 1. Tab Reguler (Bagi 3)
         const regTab = document.getElementById('tab-reguler');
         let regT = 0;
         let q90 = parseInt(regTab.querySelector('.reg-qty').value) || 0; 
@@ -244,13 +244,17 @@
         let gB = totalBerbayar * 25000;      
         let gW = regT * 0.1;                 
         
-        // --- LOGIKA CETAK FISIK REGULER ---
+        // Cetak Fisik Reguler
         let jmlFisikReg = parseInt(document.getElementById('reg-fisik').value) || 0;
         let gBenReg = jmlFisikReg * BENSIN_MUHTAM;            
         let gLkpbRegCetak = jmlFisikReg * SISA_CETAK_LKPB;    
 
         let gSisa = regT - gG - gB - gW;
-        let g3 = gSisa / 3;
+        
+        // Logika Pembulatan Tab Reguler
+        let g3_raw = gSisa / 3;
+        let g3 = Math.floor(g3_raw / 100) * 100;      // Dibulatkan ke bawah (ratusan)
+        let gSisaPembulatanReg = gSisa - (g3 * 3);    // Sisa pembulatan masuk LKPB
 
         // Update Tampilan UI Tab Reguler
         document.getElementById('reg-t-masuk').innerText = formatRp(regT);
@@ -260,30 +264,45 @@
         document.getElementById('reg-out-web').innerText = formatRp(gW); 
         document.getElementById('reg-out-ilham').innerText = formatRp(g3);
         document.getElementById('reg-out-muhtam').innerText = formatRp(g3 + gBenReg); 
-        document.getElementById('reg-out-lkpb').innerText = formatRp(g3 + gLkpbRegCetak); 
+        document.getElementById('reg-out-lkpb').innerText = formatRp(g3 + gSisaPembulatanReg + gLkpbRegCetak); 
 
         // Update Rekap Akumulasi
         r.dewi += (gG + gB); 
         r.web += gW; 
         r.ilham += g3; 
         r.muhtam += g3; 
-        r.lkpb += (g3 + gLkpbRegCetak); 
+        r.lkpb += (g3 + gSisaPembulatanReg + gLkpbRegCetak); 
         r.bensin += gBenReg;
 
-        // 2. Tab LTI
-        let lQty = parseInt(document.getElementById('lti-qty').value) || 0, lMasuk = lQty * 20000, lWeb = lMasuk * 0.1, lSisa = lMasuk - lWeb, l3 = lSisa / 3;
-        document.getElementById('lti-t-masuk').innerText = formatRp(lMasuk); document.getElementById('lti-out-web').innerText = formatRp(lWeb);
-        document.getElementById('lti-sisa').innerText = formatRp(lSisa); document.getElementById('lti-out-ilham').innerText = formatRp(l3);
-        document.getElementById('lti-out-muhtam').innerText = formatRp(l3); document.getElementById('lti-out-lkpb').innerText = formatRp(l3);
-        r.web += lWeb; r.ilham += l3; r.muhtam += l3; r.lkpb += l3;
+        // 2. Tab LTI (Bagi 3)
+        let lQty = parseInt(document.getElementById('lti-qty').value) || 0, lMasuk = lQty * 20000, lWeb = lMasuk * 0.1, lSisa = lMasuk - lWeb;
+        
+        // Logika Pembulatan Tab LTI
+        let l3_raw = lSisa / 3;
+        let l3 = Math.floor(l3_raw / 100) * 100;     // Dibulatkan ke bawah (ratusan)
+        let lSisaPembulatanLti = lSisa - (l3 * 3);   // Sisa pembulatan masuk LKPB
 
-        // 3. Tab Program Dinamis (+ Program)
+        document.getElementById('lti-t-masuk').innerText = formatRp(lMasuk); 
+        document.getElementById('lti-out-web').innerText = formatRp(lWeb);
+        document.getElementById('lti-sisa').innerText = formatRp(lSisa); 
+        document.getElementById('lti-out-ilham').innerText = formatRp(l3);
+        document.getElementById('lti-out-muhtam').innerText = formatRp(l3); 
+        document.getElementById('lti-out-lkpb').innerText = formatRp(l3 + lSisaPembulatanLti);
+        
+        r.web += lWeb; r.ilham += l3; r.muhtam += l3; r.lkpb += (l3 + lSisaPembulatanLti);
+
+        // 3. Tab Program Dinamis (Bagi 4: CS, Ilham, Muhtam, LKPB)
         document.querySelectorAll('.tab-content:not(#tab-rekap):not(#tab-reguler):not(#tab-lti)').forEach(t => {
             let tM = 0; t.querySelectorAll('.input-qty').forEach(i => { let s = (parseInt(i.value) || 0) * 90000; tM += s; i.closest('tr').querySelector('.row-total').innerText = formatRp(s); });
             t.querySelector('.grand-total-masuk').innerText = formatRp(tM);
-            let tW = tM * 0.1, tS = tM - tW, t4 = tS / 4;
+            let tW = tM * 0.1, tS = tM - tW;
             
-            // --- LOGIKA CETAK FISIK PROGRAM DINAMIS ---
+            // LOGIKA PEMBULATAN 2 DIGIT KE BAWAH (BAGI 4) sesuai request kamu
+            let t4_raw = tS / 4;
+            let t4 = Math.floor(t4_raw / 100) * 100;    // Angka cantik kelipatan 100 per orang
+            let tSisaPembulatan = tS - (t4 * 4);        // Sisa pecahan ganjil ditarik semua kesini
+            
+            // Cetak Fisik Program Dinamis
             let jmlFisikProg = parseInt(t.querySelector('.input-fisik').value) || 0;
             let tBen = jmlFisikProg * BENSIN_MUHTAM;            
             let tLkpbProgCetak = jmlFisikProg * SISA_CETAK_LKPB; 
@@ -292,14 +311,14 @@
             t.querySelector('.val-cs').innerText = formatRp(t4);
             t.querySelector('.val-web').innerText = formatRp(tW); 
             t.querySelector('.val-ilham').innerText = formatRp(t4);
-            t.querySelector('.val-muhtam').innerText = formatRp(t4 + tBen); // <--- SEKARANG SUDAH DITAMBAH UANG BENSIN
-            t.querySelector('.val-lkpb').innerText = formatRp(t4 + tLkpbProgCetak); 
+            t.querySelector('.val-muhtam').innerText = formatRp(t4 + tBen); 
+            t.querySelector('.val-lkpb').innerText = formatRp(t4 + tSisaPembulatan + tLkpbProgCetak); // LKPB menerima sisa pembulatan + untung cetak fisik
             
             r[t.querySelector('.pilih-cs').value] += t4; 
             r.web += tW; 
             r.ilham += t4; 
             r.muhtam += t4; 
-            r.lkpb += (t4 + tLkpbProgCetak); 
+            r.lkpb += (t4 + tSisaPembulatan + tLkpbProgCetak); 
             r.bensin += tBen;
         });
 
